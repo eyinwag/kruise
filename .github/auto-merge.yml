@@ -1,0 +1,27 @@
+# Configuration for probot-auto-merge - https://github.com/bobvanderlinden/probot-auto-merge
+
+updateBranch: true
+deleteBranchAfterMerge: true
+reportStatus: true
+
+minApprovals:
+  NONE: 0
+# The maximum number of reviews from each association that request changes to the pull request.
+# Setting this number higher than 0 will allow automatic merging while changes are still requested.
+# Requested changes from associations not defined in this list are ignored for automatic merging.
+maxRequestedChanges:
+  NONE: 0
+blockingLabels:
+- blocked
+
+mergeMethod: merge
+
+# Will merge whenever the above conditions are met, but also
+# the owner has approved or merge label was added.
+#rules:
+#- minApprovals:
+#    OWNER: 1
+#- requiredLabels:
+#  - merge
+
+mergeCommitMessage: "{title} (#{number})"
