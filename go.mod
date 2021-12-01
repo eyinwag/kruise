@@ -6,7 +6,7 @@ require (
 	github.com/alibaba/pouch v0.0.0-20190328125340-37051654f368
 	github.com/appscode/jsonpatch v1.0.1
 	github.com/codegangsta/negroni v1.0.0
-	github.com/containerd/containerd v1.5.7
+	github.com/containerd/containerd v1.5.8
 	github.com/contiv/executor v0.0.0-20180626233236-d263f4daa3ad // indirect
 	github.com/docker/distribution v2.7.2-0.20200708230840-70e0022e42fd+incompatible
 	github.com/docker/docker v17.12.0-ce-rc1.0.20200916142827-bd33bbf0497b+incompatible
@@ -17,7 +17,7 @@ require (
 	github.com/onsi/ginkgo v1.14.1
 	github.com/onsi/gomega v1.10.3
 	github.com/opencontainers/go-digest v1.0.0
-	github.com/opencontainers/image-spec v1.0.1
+	github.com/opencontainers/image-spec v1.0.2
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.7.1
 	github.com/robfig/cron v1.2.0
