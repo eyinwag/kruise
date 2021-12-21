@@ -213,6 +213,35 @@ func GetPodsSortFunc(pods []*corev1.Pod, waitUpdateIndexes []int) func(i, j int)
 	}
 }
 
+func IsPodInjectedSidecarSet(pod *corev1.Pod, sidecarSet *appsv1alpha1.SidecarSet) bool {
+	sidecarSetNameStr, ok := pod.Annotations[SidecarSetListAnnotation]
+	if !ok || len(sidecarSetNameStr) == 0 {
+		return false
+	}
+	sidecarSetNames := sets.NewString(strings.Split(sidecarSetNameStr, ",")...)
+	return sidecarSetNames.Has(sidecarSet.Name)
+}
+
+func IsPodConsistentWithSidecarSet(pod *corev1.Pod, sidecarSet *appsv1alpha1.SidecarSet) bool {
+	for i := range sidecarSet.Spec.Containers {
+		container := &sidecarSet.Spec.Containers[i]
+		switch container.UpgradeStrategy.UpgradeType {
+		case appsv1alpha1.SidecarContainerHotUpgrade:
+			_, exist := GetPodHotUpgradeInfoInAnnotations(pod)[container.Name]
+			if !exist || util.GetContainer(fmt.Sprintf("%v-1", container.Name), pod) == nil ||
+				util.GetContainer(fmt.Sprintf("%v-2", container.Name), pod) == nil {
+				return false
+			}
+		default:
+			if util.GetContainer(container.Name, pod) == nil {
+				return false
+			}
+		}
+
+	}
+	return true
+}
+
 func IsInjectedSidecarContainerInPod(container *corev1.Container) bool {
 	return util.GetContainerEnvValue(container, SidecarEnvKey) == "true"
 }
@@ -286,7 +315,7 @@ func GetSidecarTransferEnvs(sidecarContainer *appsv1alpha1.SidecarContainer, pod
 		if tEnv.SourceContainerNameFrom != nil && tEnv.SourceContainerNameFrom.FieldRef != nil {
 			containerName, err := ExtractContainerNameFromFieldPath(tEnv.SourceContainerNameFrom.FieldRef, pod)
 			if err != nil {
-				klog.Errorf("unmarshal pod(%s.%s) annotations[%s] failed: %s", pod.Namespace, pod.Name, err.Error())
+				klog.Errorf("get containerName from pod(%s.%s) annotations or labels[%s] failed: %s", pod.Namespace, pod.Name, tEnv.SourceContainerNameFrom.FieldRef, err.Error())
 				continue
 			}
 			sourceContainerName = containerName
