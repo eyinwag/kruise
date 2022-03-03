@@ -27,7 +27,6 @@ go_check:
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	@scripts/generate_client.sh
 	@scripts/generate_openapi.sh
-	@scripts/generate_bindata.sh
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./apis/..."
 
 manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
@@ -55,7 +54,7 @@ build: generate fmt vet manifests ## Build manager binary.
 run: manifests generate fmt vet ## Run a controller from your host.
 	go run ./main.go
 
-docker-build: test ## Build docker image with the manager.
+docker-build: generate fmt vet manifests ## Build docker image with the manager.
 	docker build --pull --no-cache . -t ${IMG}
 
 docker-push: ## Push docker image with the manager.
@@ -121,7 +120,7 @@ TMP_DIR=$$(mktemp -d) ;\
 cd $$TMP_DIR ;\
 go mod init tmp ;\
 echo "Downloading $(2)" ;\
-GOBIN=$(PROJECT_DIR)/bin go get $(2) ;\
+GOBIN=$(PROJECT_DIR)/bin go install $(2) ;\
 rm -rf $$TMP_DIR ;\
 mv $(PROJECT_DIR)/bin/$(3) $(1);\
 }

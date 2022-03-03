@@ -22,6 +22,24 @@ import (
 )
 
 var (
+	// WebserverImage is the fully qualified URI to the Httpd image
+	WebserverImage = imageutils.GetE2EImage(imageutils.Httpd)
+
+	// NewWebserverImage is the fully qualified URI to the HttpdNew image
+	NewWebserverImage = imageutils.GetE2EImage(imageutils.HttpdNew)
+
+	// AgnhostImage is the fully qualified URI to the Agnhost image
+	AgnhostImage = imageutils.GetE2EImage(imageutils.Agnhost)
+
+	// NginxImage gets a Niginx image
+	NginxImage = imageutils.GetE2EImage(imageutils.Nginx)
+
 	// NewNginxImage gets a Niginx image
 	NewNginxImage = imageutils.GetE2EImage(imageutils.NginxNew)
+
+	// BusyboxImage gets a Busybox image
+	BusyboxImage = imageutils.GetE2EImage(imageutils.BusyBox)
+
+	// InvalidImage is the fully qualified URI to the invalid image
+	InvalidImage = imageutils.GetE2EImage(imageutils.InvalidRegistryImage)
 )

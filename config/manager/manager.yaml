@@ -5,6 +5,12 @@ metadata:
     control-plane: controller-manager
   name: system
 ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: manager
+  namespace: system
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -45,11 +51,12 @@ spec:
         resources:
           limits:
             cpu: 100m
-            memory: 50Mi
+            memory: 200Mi
           requests:
             cpu: 100m
-            memory: 50Mi
+            memory: 200Mi
       terminationGracePeriodSeconds: 10
+      serviceAccountName: kruise-manager
 ---
 apiVersion: v1
 kind: Secret
@@ -108,7 +115,7 @@ spec:
         resources:
           limits:
             cpu: 100m
-            memory: 50Mi
+            memory: 100Mi
           requests:
             cpu: "0"
             memory: "0"

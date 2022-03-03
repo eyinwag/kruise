@@ -34,6 +34,7 @@ import (
 	utilpointer "k8s.io/utils/pointer"
 
 	appspub "github.com/openkruise/kruise/apis/apps/pub"
+	appsv1alpha1 "github.com/openkruise/kruise/apis/apps/v1alpha1"
 	appsv1beta1 "github.com/openkruise/kruise/apis/apps/v1beta1"
 	imagejobutilfunc "github.com/openkruise/kruise/pkg/util/imagejob/utilfunction"
 	"github.com/openkruise/kruise/pkg/util/inplaceupdate"
@@ -263,6 +264,7 @@ func (ssc *defaultStatefulSetControl) getStatefulSetRevisions(
 	for i := range revisions {
 		if revisions[i].Name == set.Status.CurrentRevision {
 			currentRevision = revisions[i]
+			break
 		}
 	}
 
@@ -309,9 +311,24 @@ func (ssc *defaultStatefulSetControl) updateStatefulSet(
 
 	if !isPreDownloadDisabled && sigsruntimeClient != nil {
 		if currentRevision.Name != updateRevision.Name {
-			// pre-download images for new revision
-			if err := ssc.createImagePullJobsForInPlaceUpdate(set, currentRevision, updateRevision); err != nil {
-				klog.Errorf("Failed to create ImagePullJobs for %v: %v", set, err)
+			// get asts pre-download annotation
+			minUpdatedReadyPodsCount := 0
+			if minUpdatedReadyPods, ok := set.Annotations[appsv1alpha1.ImagePreDownloadMinUpdatedReadyPods]; ok {
+				minUpdatedReadyPodsIntStr := intstrutil.Parse(minUpdatedReadyPods)
+				minUpdatedReadyPodsCount, err = intstrutil.GetScaledValueFromIntOrPercent(&minUpdatedReadyPodsIntStr, int(*set.Spec.Replicas), true)
+				if err != nil {
+					klog.Errorf("Failed to GetScaledValueFromIntOrPercent of minUpdatedReadyPods for %s: %v", set, err)
+				}
+			}
+			updatedReadyReplicas := set.Status.UpdatedReadyReplicas
+			if updateRevision.Name != set.Status.UpdateRevision {
+				updatedReadyReplicas = 0
+			}
+			if int32(minUpdatedReadyPodsCount) <= updatedReadyReplicas {
+				// pre-download images for new revision
+				if err := ssc.createImagePullJobsForInPlaceUpdate(set, currentRevision, updateRevision); err != nil {
+					klog.Errorf("Failed to create ImagePullJobs for %v: %v", set, err)
+				}
 			}
 		} else {
 			// delete ImagePullJobs if revisions have been consistent
@@ -366,6 +383,9 @@ func (ssc *defaultStatefulSetControl) updateStatefulSet(
 		// count the number of running and ready replicas
 		if isRunningAndReady(pods[i]) {
 			status.ReadyReplicas++
+			if getPodRevision(pods[i]) == updateRevision.Name {
+				status.UpdatedReadyReplicas++
+			}
 			if avail, _ := isRunningAndAvailable(pods[i], minReadySeconds); avail {
 				status.AvailableReplicas++
 			}
@@ -581,12 +601,15 @@ func (ssc *defaultStatefulSetControl) updateStatefulSet(
 			continue
 		}
 		// if we are in monotonic mode and the condemned target is not the first unhealthy Pod block
-		if !isRunningAndReady(condemned[target]) && monotonic && condemned[target] != firstUnhealthyPod {
+		if avail, waitTime := isRunningAndAvailable(condemned[target], minReadySeconds); !avail && monotonic && condemned[target] != firstUnhealthyPod {
 			klog.V(4).Infof(
-				"StatefulSet %s/%s is waiting for Pod %s to be Running and Ready prior to scale down",
+				"StatefulSet %s/%s is waiting for Pod %s to be Running and Available prior to scale down",
 				set.Namespace,
 				set.Name,
 				firstUnhealthyPod.Name)
+			if waitTime > 0 {
+				durationStore.Push(getStatefulSetKey(condemned[target]), waitTime)
+			}
 			return &status, nil
 		}
 		klog.V(2).Infof("StatefulSet %s/%s terminating Pod %s for scale down",
