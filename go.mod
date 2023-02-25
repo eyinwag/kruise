@@ -24,7 +24,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.0
 	github.com/xyproto/simpleredis v0.0.0-20200201215242-1ff0da2967b4
-	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4
+	golang.org/x/net v0.7.0
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
 	gomodules.xyz/jsonpatch/v2 v2.1.0
 	google.golang.org/grpc v1.33.2
